@@ -5,7 +5,7 @@
 #include <gfx_pixel.hpp>
 #include <gfx_positioning.hpp>
 #include <gfx_draw_helpers.hpp>
-#include "common/tft_driver.hpp"
+#include <tft_driver.hpp>
 namespace arduino {
 template <int16_t BaseWidth, int16_t BaseHeight, int8_t PinDC, int8_t PinRst,
           int8_t PinBL, typename Bus, uint8_t Rotation = 0,
@@ -27,9 +27,9 @@ struct st7789 final {
 
    private:
     constexpr static const uint16_t column_start =
-        (base_width == 135) ? ((rotation & 1) ? 40 : 52) : 0;
+        (base_width == 135) ? ((rotation & 1) ? 40 : 53) : 0;
     constexpr static const uint16_t row_start =
-        (base_width == 135) ? ((rotation & 1) ? 52 : 40) : 0;
+        (base_width == 135) ? ((rotation & 1) ? 53 : 40) : 0;
 
    public:
     constexpr static const uint16_t width =
