@@ -26,10 +26,41 @@ struct st7789 final {
     constexpr static const size_t max_dma_size = base_width * base_height * 2;
 
    private:
+   constexpr static uint16_t compute_column_start() {
+       if(base_width!=135) {
+           return rotation==3?80:40;
+       }
+       switch(rotation) {
+        case 0:
+            return 52;
+        case 1:
+            return 40;
+        case 2:
+            return 53;
+        case 3:
+            return 40;
+       }
+   }
+   constexpr static uint16_t compute_row_start() {
+       if(base_width!=135) {
+           return rotation==2?80:0;
+       } else {
+        switch(rotation) {
+            case 0:
+                return 40;
+            case 1:
+                return 53;
+            case 2:
+                return 40;
+            case 3:
+                return 52;
+        }
+       }
+   }
     constexpr static const uint16_t column_start =
-        (base_width == 135) ? ((rotation & 1) ? 40 : 53) : 0;
+        compute_column_start();
     constexpr static const uint16_t row_start =
-        (base_width == 135) ? ((rotation & 1) ? 53 : 40) : 0;
+        compute_row_start();
 
    public:
     constexpr static const uint16_t width =
@@ -365,6 +396,7 @@ struct st7789 final {
                                               const gfx::rect16& srcr,
                                               Destination& dst,
                                               const gfx::rect16& dstr) {
+            
             if (gfx::helpers::template is_same<typename Destination::pixel_type,
                                                pixel_type>::value &&
                 dstr.top_left() == gfx::point16(0, 0)) {

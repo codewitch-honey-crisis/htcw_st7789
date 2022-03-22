@@ -1,16 +1,3 @@
-/* Your platformio.ini file should look something like this
-
-[env:node32s]
-platform = espressif32
-board = node32s
-framework = arduino
-lib_deps = 
-	codewitch-honey-crisis/htcw_st7789@^1.0.0
-lib_ldf_mode = deep
-build_unflags=-std=gnu++11
-build_flags=-std=gnu++14
-*/
-
 // You need a lot of program space/flash space to embed a truetype font
 #if defined(ARDUINO_ARCH_ESP32)
 #define USE_TRUETYPE

@@ -1,6 +1,6 @@
 {
     "name": "htcw_st7789",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Provides support for the ST7789 display device w/ GFX",
     "keywords": ["tft","st7789","graphics","drawing"],
     "authors": {
