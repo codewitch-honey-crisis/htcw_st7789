@@ -74,8 +74,10 @@ true
 using lcd_type = st7789<LCD_WIDTH,LCD_HEIGHT,PIN_NUM_DC,PIN_NUM_RST,PIN_NUM_BCKL,bus_type,LCD_ROTATION,
 // different devices tolerate different speeds:
 #ifndef TTGO
-200,200
+true,
+400,200
 #else
+false,
 400,200
 #endif
 >;

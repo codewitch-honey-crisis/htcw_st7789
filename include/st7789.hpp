@@ -1,21 +1,22 @@
 #include <Arduino.h>
 
 #include <gfx_core.hpp>
+#include <gfx_draw_helpers.hpp>
 #include <gfx_palette.hpp>
 #include <gfx_pixel.hpp>
 #include <gfx_positioning.hpp>
-#include <gfx_draw_helpers.hpp>
 #include <tft_driver.hpp>
 namespace arduino {
 template <int16_t BaseWidth, int16_t BaseHeight, int8_t PinDC, int8_t PinRst,
           int8_t PinBL, typename Bus, uint8_t Rotation = 0,
-          unsigned int WriteSpeedPercent = 200,
+          bool AltDisplayCode = false, unsigned int WriteSpeedPercent = 200,
           unsigned int ReadSpeedPercent = WriteSpeedPercent>
 struct st7789 final {
     constexpr static const int8_t pin_dc = PinDC;
     constexpr static const int8_t pin_rst = PinRst;
     constexpr static const int8_t pin_bl = PinBL;
     constexpr static const uint8_t rotation = Rotation & 3;
+    constexpr static const bool alt_display_code = AltDisplayCode;
     constexpr static const uint16_t base_width = BaseWidth;
     constexpr static const uint16_t base_height = BaseHeight;
     constexpr static const float write_speed_multiplier =
@@ -26,41 +27,72 @@ struct st7789 final {
     constexpr static const size_t max_dma_size = base_width * base_height * 2;
 
    private:
-   constexpr static uint16_t compute_column_start() {
-       if(base_width!=135) {
-           return rotation==3?80:40;
-       }
-       switch(rotation) {
-        case 0:
-            return 52;
-        case 1:
-            return 40;
-        case 2:
-            return 53;
-        case 3:
-            return 40;
-       }
-   }
-   constexpr static uint16_t compute_row_start() {
-       if(base_width!=135) {
-           return rotation==2?80:0;
-       } else {
-        switch(rotation) {
-            case 0:
-                return 40;
-            case 1:
-                return 53;
-            case 2:
-                return 40;
-            case 3:
-                return 52;
+    constexpr static uint16_t compute_column_start() {
+        if (alt_display_code) {
+            if (base_width != 135) {
+                return rotation == 3 ? 80 : 40;
+            }
+            switch (rotation) {
+                case 0:
+                    return 52;
+                case 1:
+                    return 40;
+                case 2:
+                    return 53;
+                case 3:
+                    return 40;
+            }
+        } else {
+            if (base_width != 135) {
+                return rotation == 4 ? 80 : 0;
+            }
+            switch (rotation) {
+                case 0:
+                    return 52;
+                case 1:
+                    return 40;
+                case 2:
+                    return 53;
+                case 3:
+                    return 40;
+            }
         }
-       }
-   }
-    constexpr static const uint16_t column_start =
-        compute_column_start();
-    constexpr static const uint16_t row_start =
-        compute_row_start();
+    }
+    constexpr static uint16_t compute_row_start() {
+        if(alt_display_code) {
+            if (base_width != 135) {
+                return rotation == 2 ? 80 : 0;
+            } else {
+                switch (rotation) {
+                    case 0:
+                        return 40;
+                    case 1:
+                        return 53;
+                    case 2:
+                        return 40;
+                    case 3:
+                        return 52;
+                }
+            }
+        } else {
+            if (base_width != 135) {
+                return rotation == 2 ? 80 : 0;
+            } else {
+                switch (rotation) {
+                    case 0:
+                        return 40;
+                    case 1:
+                        return 53;
+                    case 2:
+                        return 40;
+                    case 3:
+                        return 52;
+                }
+            }
+        }
+    }
+    constexpr static const uint16_t column_start = compute_column_start();
+    constexpr static const uint16_t row_start = compute_row_start();
 
    public:
     constexpr static const uint16_t width =
@@ -396,7 +428,6 @@ struct st7789 final {
                                               const gfx::rect16& srcr,
                                               Destination& dst,
                                               const gfx::rect16& dstr) {
-            
             if (gfx::helpers::template is_same<typename Destination::pixel_type,
                                                pixel_type>::value &&
                 dstr.top_left() == gfx::point16(0, 0)) {
