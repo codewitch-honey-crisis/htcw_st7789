@@ -1,6 +1,6 @@
 {
     "name": "htcw_st7789",
-    "version": "1.0.7",
+    "version": "1.0.8",
     "description": "Provides support for the ST7789 display device w/ GFX",
     "keywords": ["tft","st7789","graphics","drawing"],
     "authors": {
@@ -20,8 +20,8 @@
         "url": "https://github.com/codewitch-honey-crisis/htcw_st7789.git"
     },
     "dependencies": {
-        "codewitch-honey-crisis/htcw_gfx": "^1.0.6",
-        "codewitch-honey-crisis/htcw_tft_io": "^1.0.1"
+        "codewitch-honey-crisis/htcw_gfx": "^1.0.8",
+        "codewitch-honey-crisis/htcw_tft_io": "^1.0.2"
     },
     "examples": [
         {
