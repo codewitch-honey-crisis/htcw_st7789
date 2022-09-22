@@ -27,72 +27,60 @@ struct st7789 final {
     constexpr static const size_t max_dma_size = base_width * base_height * 2;
 
    private:
-    constexpr static uint16_t compute_column_start() {
-        if (alt_display_code) {
-            if (base_width != 135) {
-                return rotation == 3 ? 80 : 40;
-            }
-            switch (rotation) {
-                case 0:
-                    return 52;
-                case 1:
-                    return 40;
-                case 2:
-                    return 53;
-                case 3:
-                    return 40;
-            }
-        } else {
-            if (base_width != 135) {
-                return rotation == 4 ? 80 : 0;
-            }
-            switch (rotation) {
-                case 0:
-                    return 52;
-                case 1:
-                    return 40;
-                case 2:
-                    return 53;
-                case 3:
-                    return 40;
-            }
-        }
-    }
-    constexpr static uint16_t compute_row_start() {
-        if(alt_display_code) {
-            if (base_width != 135) {
-                return rotation == 2 ? 80 : 0;
-            } else {
-                switch (rotation) {
-                    case 0:
-                        return 40;
-                    case 1:
-                        return 53;
-                    case 2:
-                        return 40;
-                    case 3:
-                        return 52;
+    constexpr static gfx::point16 compute_offset() {
+
+        switch(rotation) {
+            case 0:
+                if(base_width==135) {
+                    return {52,40};
+                } else if(base_height==280) {
+                    return {0,20};
+                } else if(base_width==172) {
+                    return {34,0};
+                } else if(base_width==170) {
+                    return {35,0};
                 }
-            }
-        } else {
-            if (base_width != 135) {
-                return rotation == 2 ? 80 : 0;
-            } else {
-                switch (rotation) {
-                    case 0:
-                        return 40;
-                    case 1:
-                        return 53;
-                    case 2:
-                        return 40;
-                    case 3:
-                        return 52;
+                return {0,0};
+            case 1:
+                if(base_width==135) {
+                    return {40,53};
+                } else if(base_height==280) {
+                    return {20,0};
+                } else if(base_width==172) {
+                    return {0,34};
+                } else if(base_width==170) {
+                    return {0,35};
                 }
-            }
+                return {0,0};
+            case 2:
+                if(base_width==135) {
+                    return {53,40};
+                } else if(base_height==280) {
+                    return {0,20};
+                } else if(base_width==172) {
+                    return {34,0};
+                } else if(base_width==170) {
+                    return {35,0};
+                }
+                return {0,80};
+            case 3:
+                if(base_width==135) {
+                    return {40,52};
+                } else if(base_height==280) {
+                    return {20,0};
+                } else if(base_width==172) {
+                    return {0,34};
+                } else if(base_width==170) {
+                    return {0,35};
+                }
+                return {80,0};
         }
+        
+    
     }
-    constexpr static const uint16_t column_start = compute_column_start();
-    constexpr static const uint16_t row_start = compute_row_start();
+    
+    constexpr static const uint16_t column_start = compute_offset().x;
+    constexpr static const uint16_t row_start = compute_offset().y;
 
    public:
     constexpr static const uint16_t width =
