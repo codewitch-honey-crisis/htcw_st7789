@@ -39,6 +39,8 @@ struct st7789 final {
                     return {34,0};
                 } else if(base_width==170) {
                     return {35,0};
+                } else if (base_width==128) {
+                    return {2,1};
                 }
                 return {0,0};
             case 1:
@@ -50,6 +52,8 @@ struct st7789 final {
                     return {0,34};
                 } else if(base_width==170) {
                     return {0,35};
+                } else if (base_width==128) {
+                    return {1,2};
                 }
                 return {0,0};
             case 2:
@@ -61,6 +65,8 @@ struct st7789 final {
                     return {34,0};
                 } else if(base_width==170) {
                     return {35,0};
+                } else if (base_width==128) {
+                    return {1,2};
                 }
                 return {0,80};
             case 3:
@@ -72,6 +78,8 @@ struct st7789 final {
                     return {0,34};
                 } else if(base_width==170) {
                     return {0,35};
+                } else if (base_width==128) {
+                    return {2,1};
                 }
                 return {80,0};
         }
