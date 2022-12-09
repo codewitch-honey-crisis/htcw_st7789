@@ -122,6 +122,7 @@ struct st7789 final {
         if(m_initialized==2) {
             driver::send_command(0x11); // Wake display
             delay(120); // Delay for pwer supplies to stabilise
+            m_initialized = 1;
         }
         if (!m_initialized) {
             if (driver::initialize()) {
