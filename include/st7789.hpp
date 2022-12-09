@@ -66,7 +66,7 @@ struct st7789 final {
                 } else if(base_width==170) {
                     return {35,0};
                 } else if (base_width==128) {
-                    return {2,1};
+                    return {1,2};
                 }
                 return {0,80};
             case 3:
@@ -79,7 +79,7 @@ struct st7789 final {
                 } else if(base_width==170) {
                     return {0,35};
                 } else if (base_width==128) {
-                    return {1,2};
+                    return {2,1};
                 }
                 return {80,0};
         }
@@ -111,7 +111,18 @@ struct st7789 final {
             driver::deinitialize();
         }
     }
+    void sleep() {
+        if(m_initialized==1) {
+            driver::send_command(0x10); // Sleep
+            delay(5); // Delay for shutdown time before another command can be sent
+            m_initialized = 2;
+        }
+    }
     bool initialize() {
+        if(m_initialized==2) {
+            driver::send_command(0x11); // Wake display
+            delay(120); // Delay for pwer supplies to stabilise
+        }
         if (!m_initialized) {
             if (driver::initialize()) {
                 bus::set_speed_multiplier(write_speed_multiplier);
@@ -400,7 +411,7 @@ struct st7789 final {
     }
 
    private:
-    bool m_initialized;
+    int m_initialized;
     bool m_dma_initialized;
     bool m_in_batch;
     static void set_window(const gfx::rect16& bounds, bool read = false) {
