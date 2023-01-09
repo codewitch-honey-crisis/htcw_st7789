@@ -15,7 +15,7 @@ struct st7789 final {
     constexpr static const int8_t pin_dc = PinDC;
     constexpr static const int8_t pin_rst = PinRst;
     constexpr static const int8_t pin_bl = PinBL;
-    constexpr static const uint8_t rotation = Rotation & 3;
+    constexpr static const uint8_t initial_rotation = Rotation & 3;
     constexpr static const bool alt_display_code = AltDisplayCode;
     constexpr static const uint16_t base_width = BaseWidth;
     constexpr static const uint16_t base_height = BaseHeight;
@@ -27,7 +27,7 @@ struct st7789 final {
     constexpr static const size_t max_dma_size = base_width * base_height * 2;
 
    private:
-    constexpr static gfx::point16 compute_offset() {
+    static gfx::point16 compute_offset(uint8_t rotation) {
 
         switch(rotation) {
             case 0:
@@ -83,18 +83,11 @@ struct st7789 final {
                 }
                 return {80,0};
         }
-        
+       return {0,0} ;
     
     }
-    
-    constexpr static const uint16_t column_start = compute_offset().x;
-    constexpr static const uint16_t row_start = compute_offset().y;
-
    public:
-    constexpr static const uint16_t width =
-        (rotation & 1) ? base_height : base_width;
-    constexpr static const uint16_t height =
-        (rotation & 1) ? base_width : base_height;
+    
     using type = st7789;
     using driver = tft_driver<PinDC, PinRst, PinBL, Bus>;
     using bus = Bus;
@@ -125,6 +118,7 @@ struct st7789 final {
             m_initialized = 1;
         }
         if (!m_initialized) {
+            m_rotation = initial_rotation;
             if (driver::initialize()) {
                 bus::set_speed_multiplier(write_speed_multiplier);
                 bus::begin_initialization();
@@ -231,15 +225,16 @@ struct st7789 final {
                 driver::send_command(0x2A);  // Column address set
                 driver::send_data8(0x00);
                 driver::send_data8(0x00);
+                gfx::point16 offset = compute_offset(m_rotation);
                 driver::send_data8(
-                    uint8_t((column_start + base_width - 1) >> 8));
-                driver::send_data8(uint8_t(column_start + base_width - 1));
+                    uint8_t((offset.x + base_width - 1) >> 8));
+                driver::send_data8(uint8_t(offset.x + base_width - 1));
 
                 driver::send_command(0x2B);  // Row address set
                 driver::send_data8(0x00);
                 driver::send_data8(0x00);
-                driver::send_data8(uint8_t((row_start + base_height - 1) >> 8));
-                driver::send_data8(uint8_t(row_start + base_height - 1));
+                driver::send_data8(uint8_t((offset.y + base_height - 1) >> 8));
+                driver::send_data8(uint8_t(offset.y + base_height - 1));
 
                 bus::end_transaction();
                 bus::end_write();
@@ -252,7 +247,7 @@ struct st7789 final {
                 bus::end_initialization();
                 bus::begin_write();
                 bus::begin_transaction();
-                apply_rotation();
+                apply_rotation(m_rotation);
                 bus::end_transaction();
                 bus::end_write();
                 if (pin_bl > -1) {
@@ -265,8 +260,16 @@ struct st7789 final {
         }
         return m_initialized;
     }
-
-    inline gfx::size16 dimensions() const { return gfx::size16(width, height); }
+    uint8_t rotation() const {
+        return m_rotation;
+    }
+    void rotation(uint8_t rotation) {
+        m_rotation = rotation & 3;
+        bus::begin_transaction();
+        apply_rotation(m_rotation);
+        bus::end_transaction();
+    }
+    inline gfx::size16 dimensions() const { return (m_rotation&1)?gfx::size16(base_height, base_width):gfx::size16(base_width, base_height); }
     inline gfx::rect16 bounds() const { return dimensions().bounds(); }
 
     inline gfx::gfx_result point(gfx::point16 location, pixel_type color) {
@@ -287,7 +290,7 @@ struct st7789 final {
         bus::set_speed_multiplier(read_speed_multiplier);
         bus::begin_read();
         bus::cs_low();
-        set_window({location.x, location.y, location.x, location.y}, true);
+        set_window(m_rotation,{location.x, location.y, location.x, location.y}, true);
         bus::direction(INPUT);
         bus::read_raw8();  // throw away
         out_color->native_value = ((bus::read_raw8() & 0xF8) << 8) |
@@ -309,7 +312,7 @@ struct st7789 final {
         const gfx::rect16 r = bounds.normalize().crop(this->bounds());
         bus::begin_write();
         bus::begin_transaction();
-        set_window(r);
+        set_window(m_rotation,r);
         bus::write_raw16_repeat(color.native_value,
                                 (r.x2 - r.x1 + 1) * (r.y2 - r.y1 + 1));
         bus::end_transaction();
@@ -392,7 +395,7 @@ struct st7789 final {
         const gfx::rect16 r = bounds.normalize();
         bus::begin_write();
         bus::begin_transaction();
-        set_window(r);
+        set_window(m_rotation,r);
         m_in_batch = true;
         return gfx::gfx_result::success;
     }
@@ -411,21 +414,23 @@ struct st7789 final {
         return gfx::gfx_result::success;
     }
 
-   private:
+   private:    
     int m_initialized;
     bool m_dma_initialized;
+    uint8_t m_rotation;
     bool m_in_batch;
-    static void set_window(const gfx::rect16& bounds, bool read = false) {
+    static void set_window(uint8_t rotation,const gfx::rect16& bounds, bool read = false) {
         driver::dc_command();
         bus::write_raw8(0x2A);
         driver::dc_data();
-        bus::write_raw16(column_start + bounds.x1);
-        bus::write_raw16(column_start + bounds.x2);
+        gfx::point16 offset = compute_offset(rotation);
+        bus::write_raw16(offset.x + bounds.x1);
+        bus::write_raw16(offset.x + bounds.x2);
         driver::dc_command();
         bus::write_raw8(0x2B);
         driver::dc_data();
-        bus::write_raw16(row_start + bounds.y1);
-        bus::write_raw16(row_start + bounds.y2);
+        bus::write_raw16(offset.y + bounds.y1);
+        bus::write_raw16(offset.y + bounds.y2);
         driver::dc_command();
         bus::write_raw8(read ? 0x2E : 0x2C);
         driver::dc_data();
@@ -442,7 +447,7 @@ struct st7789 final {
                 if (AllowBlt && dstr.width() == srcr.width() &&
                     dstr.height() == srcr.height()) {
                     if (dstr.top_left() == gfx::point16(0, 0)) {
-                        return copy_to_fast_helper<Destination>::do_copy(srcr,
+                        return copy_to_fast_helper<Destination>::do_copy(src.rotation(), srcr,
                                                                          dst);
                     }
                 }
@@ -503,7 +508,7 @@ struct st7789 final {
     };
     template <typename Destination>
     struct copy_to_fast_helper {
-        static gfx::gfx_result do_copy(const gfx::rect16& src_rect,
+        static gfx::gfx_result do_copy(uint8_t rotation,const gfx::rect16& src_rect,
                                        Destination& dst) {
             gfx::rect16 r = src_rect.normalize();
             bool entire = false;
@@ -539,7 +544,7 @@ struct st7789 final {
                     for (int x = r.x1; x <= r.x2; ++x) {
                         uint8_t buf3[3];
                         buf = buf3;
-                        fetch_buffer({uint16_t(x), uint16_t(y), uint16_t(x),
+                        fetch_buffer(rotation,{uint16_t(x), uint16_t(y), uint16_t(x),
                                       uint16_t(y)},
                                      buf, 3);
                         px.native_value = (((*buf) & 0xF8) << 8);
@@ -559,7 +564,7 @@ struct st7789 final {
                 buf = nullptr;
             } else {
                 if (entire) {
-                    fetch_buffer(r, buf, bsz);
+                    fetch_buffer(rotation,r, buf, bsz);
                     gfx::helpers::suspender<Destination,
                                             Destination::caps::suspend,
                                             Destination::caps::async>
@@ -604,7 +609,7 @@ struct st7789 final {
                                             Destination::caps::async>
                         stok(dst, false);
                     for (int y = r.y1; y <= r.y2; ++y) {
-                        fetch_buffer(r, buf, bsz);
+                        fetch_buffer(rotation,r, buf, bsz);
                         gfx::gfx_result rr =
                             batch::begin_batch(dst,
                                                {0, 0, uint16_t(r.width() - 1),
@@ -644,13 +649,13 @@ struct st7789 final {
             return gfx::gfx_result::success;
         }
 
-        static void fetch_buffer(const gfx::rect16& r, uint8_t* buf,
+        static void fetch_buffer(uint8_t rotation,const gfx::rect16& r, uint8_t* buf,
                                  size_t len) {
             bus::dma_wait();
             bus::set_speed_multiplier(read_speed_multiplier);
             bus::begin_read();
             bus::cs_low();
-            set_window(r, true);
+            set_window(rotation,r, true);
             bus::direction(INPUT);
             bus::read_raw8();  // throw away
             bus::read_raw(buf, len);
@@ -710,7 +715,7 @@ struct st7789 final {
             // direct blt
             if (src.bounds().width() == srcr.width() && srcr.x1 == 0) {
                 bus::begin_write();
-                set_window(dstr);
+                set_window(this_->rotation(),dstr);
                 if (async) {
                     bus::write_raw_dma(
                         src.begin() + (srcr.y1 * src.dimensions().width * 2),
@@ -734,7 +739,7 @@ struct st7789 final {
             while (yy < hh - !!async) {
                 gfx::rect16 dr = {dstr.x1, uint16_t(dstr.y1 + yy), dstr.x2,
                                   uint16_t(dstr.y1 + yy)};
-                set_window(dr);
+                set_window(this_->rotation(),dr);
                 bus::write_raw(
                     src.begin() + 2 * (ww * (srcr.y1 + yy) + srcr.x1), pitch);
                 ++yy;
@@ -742,7 +747,7 @@ struct st7789 final {
             if (async) {
                 gfx::rect16 dr = {dstr.x1, uint16_t(dstr.y1 + yy), dstr.x2,
                                   uint16_t(dstr.y1 + yy)};
-                set_window(dr);
+                set_window(this_->rotation(),dr);
                 bus::write_raw_dma(
                     src.begin() + 2 * (ww * (srcr.y1 + yy) + srcr.x1), pitch);
             }
@@ -769,7 +774,7 @@ struct st7789 final {
                                      typename Source::pixel_type>::value &&
                    Source::caps::blt > ::do_draw(this, dstr, src, srcr, async);
     }
-    static void apply_rotation() {
+    static void apply_rotation(uint8_t rotation) {
         bus::begin_write();
         driver::send_command(0x36);
         switch (rotation) {
