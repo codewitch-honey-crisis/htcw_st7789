@@ -66,7 +66,11 @@ struct st7789 final {
                 } else if(base_width==170) {
                     return {35,0};
                 } else if (base_width==128) {
-                    return {1,2};
+                    if(base_height!=128) {
+                        return {1,2};
+                    } else {
+                        return {0,0};
+                    }
                 }
                 return {0,80};
             case 3:
@@ -79,7 +83,11 @@ struct st7789 final {
                 } else if(base_width==170) {
                     return {0,35};
                 } else if (base_width==128) {
-                    return {2,1};
+                    if(base_height!=128) {
+                        return {2,1};
+                    } else {
+                        return {0,0};
+                    }
                 }
                 return {80,0};
         }
